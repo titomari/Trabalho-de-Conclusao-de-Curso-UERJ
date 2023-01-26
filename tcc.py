@@ -16,7 +16,7 @@ def pegaCombos(d):
 
 
 def PlotarBarChart(a, nome):
-    rc = {'figure.figsize':(10,6),
+    rc = {'figure.figsize':(10,8),
           'axes.facecolor':'white',
           'axes.edgecolor': 'white',
           'axes.labelcolor': 'black',
@@ -36,6 +36,7 @@ def PlotarBarChart(a, nome):
     fig, axes = plt.subplots()
     fig.suptitle(nome)
     plt.xticks(rotation = 0)
+    axes.axhline(0, color = 'black')
     sns.barplot(ax=axes, x=a.index, y= list(a), color = '#434141')
     
     for p in axes.patches:
@@ -58,9 +59,45 @@ def Ordena(a):
     
     return(b)
 
+# ---------- DASHBOARD STREAMLIT ----------------------------------------
+
+st.set_page_config(page_title=("Hidros Consultoria"), layout = 'wide')
+
+st.sidebar.title('Hidros Consultoria')
+
+st.sidebar.subheader('Insira a base de dados aqui no formato .xlsx')
+
+file = st.sidebar.file_uploader('Base de Dados', 'xlsx')
+
+if file is not None:
+
+    df = pd.read_excel(file)
+
+
+pagina = st.sidebar.selectbox('Selecione a página', ['Página Inicial','Comercial','Marketing','Coordenação'])
+
+
+# ---------- INICIO DA PAGINA INICIAL ----------------------------------------
+
+if pagina == 'Página Inicial':
+    
+    st.title("Análise dos Dados da Hidros Consultoria")
+    
+    st.subheader("1. Informações Iniciais")
+    
+    st.text("Este aplicativo web foi desenvolvido por Mariana de Oliveira Tito e faz parte do Projeto de Graduação em Engenharia Elétrica da autora")
+    st.text("As informaçõs presentes nesta visualização foram cedidas pela Hidros Consultoria - Empresa Júnior de Engenharia da UERJ")
+    
+    
+    st.subheader("2. Dados Utilizados")
+    st.text("Os dados utilizados foram extraídos do Pipefy da Hidros Consultoria em setembro de 2022")
+    
+    
+
+
 # ---------- LEITURA DA BASE DE DADOS ------------------------------------------
 
-df = pd.read_excel('base_Hidros.xlsx')
+#df = pd.read_excel('base_Hidros.xlsx')
 
 
 # ---------- AJUSTE NO ATRIBUTO SERVIÇOS ------------------------------------------
@@ -116,66 +153,39 @@ baseAjustada['Dia da assinatura do contrato'] = pd.to_datetime(baseAjustada['Dia
 
 baseProposta = baseAjustada.loc[(baseAjustada['Valor AP'].notnull())]
 
-baseAssinado = baseAjustada.loc[(baseAjustada['Current phase'] == 'ASSINADO')]
+baseAssinado = baseAjustada.loc[(baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Dia da assinatura do contrato'].notnull())]
 
-# ---------- DASHBOARD STREAMLIT ----------------------------------------
 
-st.set_page_config(page_title=("Hidros Consultoria"), layout = 'wide')
+# ---------- INICIO DA PAGINA COMERCIAL ----------------------------------------
 
-st.sidebar.title('Hidros Consultoria')
-
-pagina = st.sidebar.selectbox('Selecione o relatório', ['Página Inicial','Histórico','Coordenação'])
-
-# ---------- INICIO DA PAGINA INICIAL ----------------------------------------
-
-if pagina == 'Página Inicial':
+if pagina == 'Comercial':
     
-    st.title("Análise dos Dados da Hidros Consultoria")
-    
-    st.subheader("1. Informações Iniciais")
-    
-    st.text("Este aplicativo web foi desenvolvido por Mariana de Oliveira Tito e faz parte do Projeto de Graduação em Engenharia Elétrica da autora")
-    st.text("As informaçõs presentes nesta visualização foram cedidas pela Hidros Consultoria - Empresa Júnior de Engenharia da UERJ")
-    
-    
-    st.subheader("2. Dados Utilizados")
-    st.text("Os dados utilizados foram extraídos do Pipefy da Hidros Consultoria em setembro de 2022")
+    relatorio = st.sidebar.radio('Selecione o relatório', ['Propostas & Contratos','Faturamento', 'Motivo de Cancelamento'])
 
-# ---------- INICIO DA PAGINA HISTORICO ----------------------------------------
-
-elif pagina == 'Histórico':
-
-
+    if relatorio == 'Propostas & Contratos':
     
-    st.title("Desempenho Histórico | Hidros Consultoria")
-    st.subheader("Principais indicadores da empresa comparados ano a ano")
-    
-    subpage1 = st.selectbox('Qual área deseja análisar?', ['Comercial', 'Marketing'])
-    
-    if subpage1 == 'Comercial':
+        st.title("Propostas & Contratos")
+            
+        col0, col1 = st.columns((5.0,5.0))
         
-        col1, space1, col2 = st.columns((5.0,0.5,5.0))
-        
-        with col1:
-        
-            st.title("Propostas & Projetos")
-        
-            #leads_ano = (baseAjustada['Created at'].dt.year.value_counts())
+        with col0:
+            
+            st.subheader("Distribuição Anual")
+            
             propostas_ano = (baseAjustada.loc[(baseAjustada['Valor AP'].notnull())]['Created at'].dt.year.value_counts())
             projetos_ano = (baseAjustada.loc[(baseAjustada['Valor'].notnull()) & (baseAjustada['Current phase'] == 'ASSINADO')]['Dia da assinatura do contrato'].dt.year.value_counts())
-            
-            
+                
+                
             labels = propostas_ano.index.sort_values()
-            
+                
             # ordenando as entradas do gráfico
-            #leadOrdem = Ordena(leads_ano)
             propostaOrdem = Ordena(propostas_ano)
             projetosOrdem = Ordena(projetos_ano)
-            
-            
+                
+                
             x = np.arange(len(labels))
             width = 0.2
-            
+                
             rc = {'figure.figsize':(10,4),
                   'axes.facecolor':'white',
                   'axes.edgecolor': 'white',
@@ -190,28 +200,79 @@ elif pagina == 'Histórico':
                   'axes.labelsize': 12,
                   'xtick.labelsize': 12,
                   'ytick.labelsize': 12}
+                
+            plt.rcParams.update(rc)
+                
+            fig, axes = plt.subplots()
+                
+            rects2 = axes.bar(x, propostaOrdem, width, label = 'Propostas', color = '#535152')
+            rects3 = axes.bar(x+width, projetosOrdem, width, label = 'Contratos', color = '#134338')
+                
+            axes.set_xticks(x, labels)
+            plt.xticks(rotation = 0)
+            axes.get_yaxis().set_visible(False)
+            axes.axhline(0, color = 'black')
+                
+            axes.legend()
+            axes.bar_label(rects2, padding = 2)
+            axes.bar_label(rects3, padding = 2)
+            
+            st.pyplot(fig)
+        
+        with col1:
+        
+            st.subheader("Distribuição Mensal")
+            
+            baseAjustada['MesCriado'] = baseAjustada['Created at'].dt.month_name()
+            baseAjustada['AnoCriado'] = baseAjustada['Created at'].dt.strftime('%Y')
+            baseAjustada['MesAnoCriado'] = baseAjustada['MesCriado'].map(str) + baseAjustada['AnoCriado'].map(str)
+            
+            baseAjustada.sort_values(by='Created at', inplace = True)
+            
+            propostaMes = baseAjustada['MesAnoCriado'].value_counts(sort=False)
+            
+            baseAssinado['MesAssinatura'] = baseAssinado['Dia da assinatura do contrato'].dt.month_name()
+            baseAssinado['AnoAssinatura'] = baseAssinado['Dia da assinatura do contrato'].dt.strftime('%Y')
+            baseAssinado['MesAnoAssinatura'] = baseAssinado['MesAssinatura'].map(str) + baseAssinado['AnoAssinatura'].map(str)
+            
+            baseAssinado.sort_values(by='Dia da assinatura do contrato', inplace = True)
+            
+            assinadoMes = baseAssinado['MesAnoAssinatura'].value_counts(sort=False)
+        
+            rc = {'figure.figsize':(10,4),
+                  'axes.facecolor':'white',
+                  'axes.edgecolor': 'white',
+                  'axes.labelcolor': 'black',
+                  'figure.facecolor': 'white',
+                  'patch.edgecolor': 'white',
+                  'text.color': 'black',
+                  'xtick.color': 'black',
+                  'ytick.color': 'black',
+                  'grid.color': 'grey',
+                  'font.size' : 12,
+                  'axes.labelsize': 8,
+                  'xtick.labelsize': 6,
+                  'ytick.labelsize': 6}
             
             plt.rcParams.update(rc)
             
             fig, axes = plt.subplots()
             
-            #rects1 = axes.bar(x-width, leadOrdem, width, label = 'Leads', color = '#636162')
-            rects2 = axes.bar(x, propostaOrdem, width, label = 'Propostas', color = '#535152')
-            rects3 = axes.bar(x+width, projetosOrdem, width, label = 'Projetos', color = '#434141')
             
-            axes.set_xticks(x, labels)
-            plt.xticks(rotation = 0)
-            axes.get_yaxis().set_visible(False)
             
+            axes.plot(propostaMes.index, list(propostaMes), color = '#535152', label = 'Propostas')
+            axes.plot(assinadoMes.index, list(assinadoMes), color = '#134338', label ='Contratos')
             axes.legend()
-            #axes.bar_label(rects1, padding = 2)
-            axes.bar_label(rects2, padding = 2)
-            axes.bar_label(rects3, padding = 2)
-        
+            
+            plt.xticks(rotation = 90)
+            axes.axhline(0, color = 'black')
+            
             st.pyplot(fig)
-            
+        
+        col2, col3 = st.columns((5.0,5.0))
+        
         with col2:
-            
+        
             a = b = 0;
             
             for i in range(len(propostaOrdem)):
@@ -221,34 +282,461 @@ elif pagina == 'Histórico':
             txGlobal = b/a
             
             st.text(" ")
-            st.text(" ")
-            st.markdown("**Alguns insights importantes:**")
+            st.markdown("**Informações relevantes sobre Taxa de Conversão**")
             
-            st.markdown("A Taxa de Conversão entre 2019 e 2022 foi de **%.1f**" %(txGlobal * 100) + "%")
-            st.markdown("Por **ano** temos:")
+            st.markdown("A Taxa de Conversão de proposta para contratos, entre 2019 e 2022, foi de **%.1f**" %(txGlobal * 100) + "%")
             
             for i in range(len(propostaOrdem)):
                 c = (projetosOrdem[i]/propostaOrdem[i])
-                st.markdown("* A Taxa de Conversão em " + str(labels[i]) + " foi de **%.1f**" %(c * 100) + "%")
-        
-       
-        st.subheader(" ")
-        st.subheader(" ")
-        st.subheader(" ")
-        
-        #-------------------------------------------------------------------------------------------------------------------
-        
-        col3, space2, col4 = st.columns((5.0,0.5,5.0))
+                st.markdown("* Em " + str(labels[i]) + ", a taxa de conversão entre propostas e contratos foi de **%.1f**" %(c * 100) + "%")
         
         with col3:
+            
+            st.markdown("**Alguns insights importantes sobre Propostas e Contratos**")
+            
+            maximoProposta = max(propostaMes)
+            maximoPropostaMes = propostaMes.loc[lambda x : x == maximoProposta]
+            
+            st.markdown("O máximo de proposta apresentas em um único mês foi " + str(maximoProposta) + ". Isto ocorreu em: ")
+            for i in range(len(maximoPropostaMes)):
+                st.markdown("* " + maximoPropostaMes.index[i] + "\n")
+            
+            maximoAssinado = max(assinadoMes)
+            maximoAssinadoMes = assinadoMes.loc[lambda x : x == maximoAssinado]
+            
+            st.markdown("O máximo de contratos assinados em um único mês foi " + str(maximoAssinado) + ". Isto ocorreu em: ")
+            for i in range(len(maximoAssinadoMes)):
+                st.markdown("* " + maximoAssinadoMes.index[i] + "\n")
+    
+    if relatorio == 'Faturamento':
+    
+        st.title("Faturamento")
         
-            fat_possivel = baseProposta.groupby(baseProposta['Created at'].dt.year)['Valor AP'].sum()
-            fat_real = baseAssinado.groupby(baseAssinado['Dia da assinatura do contrato'].dt.year)['Valor'].sum()
+
+        fat_possivel = baseProposta.groupby(baseProposta['Created at'].dt.year)['Valor AP'].sum()
+        fat_real = baseAssinado.groupby(baseAssinado['Dia da assinatura do contrato'].dt.year)['Valor'].sum()
             
     
-            st.title("Faturamento")
+        x = np.arange(len(fat_possivel.index))
+        width = 0.3
+            
+        rc = {'figure.figsize':(10,2.5),
+              'axes.facecolor':'white',
+              'axes.edgecolor': 'white',
+              'axes.labelcolor': 'black',
+              'figure.facecolor': 'white',
+              'patch.edgecolor': 'white',
+              'text.color': 'black',
+              'xtick.color': 'black',
+              'ytick.color': 'black',
+              'grid.color': 'grey',
+              'font.size' : 8,
+              'axes.labelsize': 8,
+              'xtick.labelsize': 8,
+              'ytick.labelsize': 8}
+            
+        plt.rcParams.update(rc)
+            
+        fig, axes = plt.subplots()
+        t = axes.bar(x, list(fat_real), width, color = '#535152')
+            
+        axes.set_xticks(x, fat_possivel.index)
+        plt.xticks(rotation = 0)
+        axes.get_yaxis().set_visible(False)
+        axes.axhline(0, color = 'black')
+            
+        axes.legend()
+        axes.bar_label(axes.containers[0], padding = 5, labels=([f'R${x:,.2f}' for x in t.datavalues]))
+        st.pyplot(fig)
+        
+        
+        st.text(" ")
+        st.text(" ")
+        st.markdown("**Faturamento Real x Faturamento Possível**")
+            
+            
+        for i in range(len(list(fat_possivel))):
+            z = list(fat_possivel)[i]
+            st.markdown("* Em " + str(fat_possivel.index[i]) + " as propostas somaram R$ " f"{z:,}" + ". Ou seja, o faturamento representou %.1f" %((list(fat_real)[i]/list(fat_possivel)[i])*100) + "%")
     
-            x = np.arange(len(fat_possivel.index))
+    if relatorio == 'Motivo de Cancelamento':
+    
+        st.title("Motivo de Cancelamento")
+        
+        rc = {'figure.figsize':(10,4),
+              'axes.facecolor':'white',
+              'axes.edgecolor': 'white',
+              'axes.labelcolor': 'black',
+              'figure.facecolor': 'white',
+              'patch.edgecolor': 'white',
+              'text.color': 'black',
+              'xtick.color': 'black',
+              'ytick.color': 'black',
+              'grid.color': 'grey',
+              'font.size' : 7,
+              'axes.labelsize': 8,
+              'xtick.labelsize': 8,
+              'ytick.labelsize': 8}
+                    
+        plt.rcParams.update(rc)
+
+        motivoCancel = baseAjustada['Motivo do Cancelamento'].value_counts()
+        
+        labels = motivoCancel.index
+        data = list(motivoCancel)
+
+        def func(pct, allvals):
+            absolute = int(np.round(pct/100.*np.sum(allvals)))
+            return "{:.0f}%".format(pct)
+
+        fig1, ax1 = plt.subplots()
+
+        ax1.pie(data, autopct=lambda pct: func(pct, data),
+                shadow=True, startangle=90, textprops=dict(color="w"))
+
+        ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+        ax1.legend(labels, loc="lower left")
+        
+        st.pyplot(fig1)
+
+        
+
+
+# ---------- INICIO DA PAGINA MARKETING ----------------------------------------
+
+elif pagina == 'Marketing':
+    
+    relatorio = st.sidebar.radio('Selecione o relatório', ['Novas Oportunidades','Formas de Chegada', 'Prospecção', 'Rentabilidade'])
+    
+    if relatorio == 'Novas Oportunidades':
+    
+        st.title("Novas Oportunidades")
+        
+        col4, col5 = st.columns((5.0,5.0))
+        
+        with col4:
+            
+            st.subheader('Distribuição Anual')
+            
+            leads_ano = baseAjustada['Created at'].dt.year.value_counts()
+            PlotarBarChart(leads_ano, nome = '')
+        
+        with col5:
+            
+            st.subheader('Distribuição por Engenharia')
+            
+            leads_eng = baseAjustada['Engenharia:'].value_counts()
+            soma_leads = baseAjustada['Engenharia:'].value_counts().sum()
+            PlotarBarChart(leads_eng, nome = '')
+
+
+            maximoEng = leads_eng.loc[lambda x : x == max(leads_eng)]
+            pctEng = maximoEng/soma_leads
+            st.markdown(' **Insight:** A engenharia com mais leads foi ' + maximoEng.index[0] + '. Suas oportunidades representam **%.1f**' %(pctEng * 100) + '%')
+
+    if relatorio == 'Formas de Chegada':
+    
+        st.title("Formas de Chegada")
+        
+        col6, col7 = st.columns((5.0,5.0))
+        
+        with col6:
+            
+            st.subheader('Acumulado')
+            
+            rc = {'figure.figsize':(8,5),
+                  'axes.facecolor':'white',
+                  'axes.edgecolor': 'white',
+                  'axes.labelcolor': 'black',
+                  'figure.facecolor': 'white',
+                  'patch.edgecolor': 'white',
+                  'text.color': 'black',
+                  'xtick.color': 'black',
+                  'ytick.color': 'black',
+                  'grid.color': 'grey',
+                  'font.size' : 8,
+                  'axes.labelsize': 12,
+                  'xtick.labelsize': 12,
+                  'ytick.labelsize': 12}
+                        
+            plt.rcParams.update(rc)
+
+            labels = (baseAjustada['Forma de Chegada'].value_counts()).index
+            data = list(baseAjustada['Forma de Chegada'].value_counts())
+
+            def func(pct, allvals):
+                absolute = int(np.round(pct/100.*np.sum(allvals)))
+                return "{:.0f}%".format(pct)
+
+            fig1, ax1 = plt.subplots()
+
+            ax1.pie(data, autopct=lambda pct: func(pct, data),
+                    shadow=True, startangle=90, textprops=dict(color="w"))
+
+            ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+            ax1.legend(labels, loc="lower left")
+            
+            st.pyplot(fig1)
+        
+        with col7:
+            
+            st.subheader('Distribuição por Ano')
+            
+            ano = st.selectbox('Escolha o ano', [2019, 2020, 2021, 2022])
+            
+            rc = {'figure.figsize':(4,2.5),
+                  'axes.facecolor':'white',
+                  'axes.edgecolor': 'white',
+                  'axes.labelcolor': 'black',
+                  'figure.facecolor': 'white',
+                  'patch.edgecolor': 'white',
+                  'text.color': 'black',
+                  'xtick.color': 'black',
+                  'ytick.color': 'black',
+                  'grid.color': 'grey',
+                  'font.size' : 4,
+                  'axes.labelsize': 8,
+                  'xtick.labelsize': 8,
+                  'ytick.labelsize': 8}
+                        
+            plt.rcParams.update(rc)
+
+            formaAno = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano)]['Forma de Chegada'].value_counts()
+            
+            labels = formaAno.index
+            data = list(formaAno)
+
+            def func(pct, allvals):
+                absolute = int(np.round(pct/100.*np.sum(allvals)))
+                return "{:.0f}%".format(pct)
+
+            fig1, ax1 = plt.subplots()
+
+            ax1.pie(data, autopct=lambda pct: func(pct, data),
+                    shadow=True, startangle=90, textprops=dict(color="w"))
+
+            ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+            ax1.legend(labels, loc="lower left")
+            
+            st.pyplot(fig1)
+        
+    if relatorio == 'Prospecção':
+        
+            st.title("Prospecção")
+            
+            col8, col9 = st.columns((5.0,5.0))
+            
+            with col8:
+                
+                st.subheader('Acumulado')
+                
+                prospec = baseAjustada['Prospecção'].value_counts()
+                
+                rc = {'figure.figsize':(10,5),
+                      'axes.facecolor':'white',
+                      'axes.edgecolor': 'white',
+                      'axes.labelcolor': 'black',
+                      'figure.facecolor': 'white',
+                      'patch.edgecolor': 'white',
+                      'text.color': 'black',
+                      'xtick.color': 'black',
+                      'ytick.color': 'black',
+                      'grid.color': 'grey',
+                      'font.size' : 12,
+                      'axes.labelsize': 12,
+                      'xtick.labelsize': 12,
+                      'ytick.labelsize': 12}
+                
+                plt.rcParams.update(rc)
+                
+                fig, axes = plt.subplots()
+                plt.xticks(rotation = 90)
+                sns.barplot(ax=axes, x=prospec.index, y= list(prospec), color = '#434141')
+                
+                for p in axes.patches:
+                    axes.annotate(format(str(int(p.get_height()))), 
+                    (p.get_x() + p.get_width() / 2., p.get_height()),
+                    ha = 'center',
+                    va = 'center', 
+                    xytext = (0, 15),
+                    textcoords = 'offset points')
+                
+                st.pyplot(fig)
+                
+                
+            
+            with col9:
+                
+                st.subheader('Distribuição por Ano')
+                
+                ano = st.selectbox('Escolha o ano', [2019, 2020, 2021, 2022])
+                
+                prospec = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano)]['Prospecção'].value_counts()
+                
+                rc = {'figure.figsize':(10,5),
+                      'axes.facecolor':'white',
+                      'axes.edgecolor': 'white',
+                      'axes.labelcolor': 'black',
+                      'figure.facecolor': 'white',
+                      'patch.edgecolor': 'white',
+                      'text.color': 'black',
+                      'xtick.color': 'black',
+                      'ytick.color': 'black',
+                      'grid.color': 'grey',
+                      'font.size' : 10,
+                      'axes.labelsize': 10,
+                      'xtick.labelsize': 10,
+                      'ytick.labelsize': 10}
+                
+                plt.rcParams.update(rc)
+                
+                fig, axes = plt.subplots()
+                plt.xticks(rotation = 90)
+                sns.barplot(ax=axes, x=prospec.index, y= list(prospec), color = '#434141')
+                
+                for p in axes.patches:
+                    axes.annotate(format(str(int(p.get_height()))), 
+                    (p.get_x() + p.get_width() / 2., p.get_height()),
+                    ha = 'center',
+                    va = 'center', 
+                    xytext = (0, 15),
+                    textcoords = 'offset points')
+                
+                st.pyplot(fig)
+                
+    if relatorio == 'Rentabilidade':
+        
+        st.title("Formas de Chegada & Faturamento")
+        
+        ano = st.selectbox('Escolha o ano', [2019, 2020, 2021, 2022])
+        
+        baseAno = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano)]
+        
+        anoFat = baseAno.groupby(baseAno['Forma de Chegada'])['Valor'].sum()
+        
+        st.subheader('Participação das Formas de Chegada no Faturamento')
+        
+        rc = {'figure.figsize':(10,3),
+              'axes.facecolor':'white',
+              'axes.edgecolor': 'white',
+              'axes.labelcolor': 'black',
+              'figure.facecolor': 'white',
+              'patch.edgecolor': 'white',
+              'text.color': 'black',
+              'xtick.color': 'black',
+              'ytick.color': 'black',
+              'grid.color': 'grey',
+              'font.size' : 4,
+              'axes.labelsize': 8,
+              'xtick.labelsize': 8,
+              'ytick.labelsize': 8}
+                    
+        plt.rcParams.update(rc)
+        
+        labels = anoFat.index
+        data = list(anoFat)
+
+        def func(pct, allvals):
+            absolute = int(np.round(pct/100.*np.sum(allvals)))
+            return "{:.0f}%".format(pct)
+
+        fig1, ax1 = plt.subplots()
+
+        ax1.pie(data, autopct=lambda pct: func(pct, data),
+                shadow=True, startangle=90, textprops=dict(color="w"))
+
+        ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+        ax1.legend(labels, loc="lower left")
+        
+        st.pyplot(fig1)
+        
+        
+                
+# ---------- INICIO DA PAGINA COORDENAÇÃO ---------------------------------
+
+elif pagina == "Coordenação":
+    
+    relatorio = st.sidebar.radio('Selecione o relatório', ['Novas Oportunidades','Faturamento', 'Sucesso por Forma de Chegada'])
+    
+    st.title("Relatório das Coordenações")
+    
+    eng = st.selectbox('Escolha a Coordenação que deseja ver', ['Civil/Cartográfica', 'Ambiental', 'Elétrica', 'Mecânica', 'Produção'])
+    
+    if relatorio == 'Novas Oportunidades':
+        
+        st.subheader("Oportunidades & Propostas | Coordenação de " + eng)
+        
+        chegadas_ano = (baseAjustada.loc[(baseAjustada['Engenharia:'] == eng)]['Created at'].dt.year.value_counts())
+        propostas_ano = (baseAjustada.loc[(baseAjustada['Valor AP'].notnull()) & (baseAjustada['Engenharia:'] == eng) ]['Created at'].dt.year.value_counts())
+        projetos_ano = (baseAjustada.loc[(baseAjustada['Valor'].notnull()) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Engenharia:'] == eng)]['Dia da assinatura do contrato'].dt.year.value_counts())
+            
+        labels = propostas_ano.index.sort_values()
+            
+        # ordenando as entradas do gráfico
+        chegadaOrdem = Ordena(chegadas_ano)
+        propostaOrdem = Ordena(propostas_ano)
+        projetosOrdem = Ordena(projetos_ano)
+            
+            
+        x = np.arange(len(labels))
+        width = 0.2
+            
+        rc = {'figure.figsize':(10,3),
+              'axes.facecolor':'white',
+              'axes.edgecolor': 'white',
+              'axes.labelcolor': 'black',
+              'figure.facecolor': 'white',
+              'patch.edgecolor': 'white',
+              'text.color': 'black',
+              'xtick.color': 'black',
+              'ytick.color': 'black',
+              'grid.color': 'grey',
+              'font.size' : 12,
+              'axes.labelsize': 12,
+              'xtick.labelsize': 12,
+              'ytick.labelsize': 12}
+            
+        plt.rcParams.update(rc)
+            
+        fig, axes = plt.subplots()
+        
+        
+        rects1 = axes.bar(x-width, chegadaOrdem, width, label = 'Chegada', color = '#434141')
+        rects2 = axes.bar(x, propostaOrdem, width, label = 'Propostas', color = '#535152')
+        #rects3 = axes.bar(x+width, projetosOrdem, width, label = 'Contratos', color = '#134338')
+            
+        axes.set_xticks(x, labels)
+        plt.xticks(rotation = 0)
+        axes.get_yaxis().set_visible(False)
+        axes.axhline(0, color = 'black')
+            
+        axes.legend()
+        axes.bar_label(rects1, padding = 2)
+        axes.bar_label(rects2, padding = 2)
+        #axes.bar_label(rects3, padding = 2)
+        
+        st.pyplot(fig)
+        
+
+    
+    if relatorio == 'Faturamento':
+    
+        baseEng = baseAjustada.loc[(baseAjustada['Engenharia:'] == eng)]
+
+    
+        col10, col11 = st.columns((5.0,5.0))
+    
+        with col10:
+            
+            contratos_eng = baseEng.groupby(baseAssinado['Dia da assinatura do contrato'].dt.year)['Valor'].count()
+            
+            st.subheader("Contratos por Ano")
+    
+            x = np.arange(len(contratos_eng.index))
             width = 0.3
             
             rc = {'figure.figsize':(10,5),
@@ -269,232 +757,110 @@ elif pagina == 'Histórico':
             plt.rcParams.update(rc)
             
             fig, axes = plt.subplots()
-            t = axes.bar(x, list(fat_real), width, color = '#535152')
+            t = axes.bar(x, list(contratos_eng), width, color = '#535152')
             
-            axes.set_xticks(x, fat_possivel.index)
+            axes.set_xticks(x, contratos_eng.index)
             plt.xticks(rotation = 0)
             axes.get_yaxis().set_visible(False)
+            axes.axhline(0, color = 'black')
+            
+            axes.legend()
+            axes.bar_label(axes.containers[0], padding = 5, labels=([f'{x:,.0f}' for x in t.datavalues]))
+            st.pyplot(fig)
+        
+        with col11:
+        
+            st.subheader("Faturamento Anual")
+            
+            fat_eng = baseEng.groupby(baseAssinado['Dia da assinatura do contrato'].dt.year)['Valor'].sum()
+    
+            x = np.arange(len(fat_eng.index))
+            width = 0.3
+            
+            rc = {'figure.figsize':(10,5),
+                  'axes.facecolor':'white',
+                  'axes.edgecolor': 'white',
+                  'axes.labelcolor': 'black',
+                  'figure.facecolor': 'white',
+                  'patch.edgecolor': 'white',
+                  'text.color': 'black',
+                  'xtick.color': 'black',
+                  'ytick.color': 'black',
+                  'grid.color': 'grey',
+                  'font.size' : 12,
+                  'axes.labelsize': 12,
+                  'xtick.labelsize': 12,
+                  'ytick.labelsize': 12}
+            
+            plt.rcParams.update(rc)
+            
+            fig, axes = plt.subplots()
+            t = axes.bar(x, list(fat_eng), width, color = '#535152')
+            
+            axes.set_xticks(x, fat_eng.index)
+            plt.xticks(rotation = 0)
+            axes.get_yaxis().set_visible(False)
+            axes.axhline(0, color = 'black')
             
             axes.legend()
             axes.bar_label(axes.containers[0], padding = 5, labels=([f'R${x:,.2f}' for x in t.datavalues]))
             st.pyplot(fig)
         
-        with col4:
-            st.text(" ")
-            st.text(" ")
-            st.markdown("**Faturamento Real x Faturamento Possível**")
+    
+        
+        
+    if relatorio == 'Sucesso por Forma de Chegada':
+    
+        st.title('Chegada & Contratos por Serviço')
+        
+        col12, col13 = st.columns((5.0,5.0))
+        
+        with col12:
+        
+            ano2 = st.selectbox('Escolha o ano de análise dos serviços', [2019, 2020, 2021, 2022])
+        
+        with col13:
             
-            
-            for i in range(len(list(fat_possivel))):
-                z = list(fat_possivel)[i]
-                st.markdown("* Em " + str(fat_possivel.index[i]) + " as propostas somaram R$ " f"{z:,}")
-                st.markdown("Ou seja, o faturamento representou %.1f" %((list(fat_real)[i]/list(fat_possivel)[i])*100) + "%")
-     
-        #-------------------------------------------------------------------------------------------------------------------
+            if eng == 'Civil/Cartográfica':
                 
-    if subpage1 == 'Marketing':
-        
-        st.text("")
-        st.title("Como os leads estão distribuidos?")
-        
-        col1, space1, col2 = st.columns((5.0,0.5,5.0))
-        
-        with col1:
-            leads_ano = baseAjustada['Created at'].dt.year.value_counts()
-            PlotarBarChart(leads_ano, nome = 'Leads criados por ano')
-        
-        with col2: 
-            leads_eng = baseAjustada['Engenharia:'].value_counts()
-            PlotarBarChart(leads_eng, nome = 'Leads criados por engenharia')
-        
-        st.text('')
-        eng = st.selectbox('Escolha a Coordenação que deseja ver', ['Civil/Cartográfica', 'Ambiental', 'Elétrica', 'Mecânica', 'Produção', 'Especial'])
-        
-        
-        st.text('')
-        
-        eng_ano = baseAjustada.loc[(baseAjustada['Engenharia:'] == eng)]['Created at'].dt.year.value_counts()
-        
-        rc = {'figure.figsize':(10,3),
-              'axes.facecolor':'white',
-              'axes.edgecolor': 'white',
-              'axes.labelcolor': 'black',
-              'figure.facecolor': 'white',
-              'patch.edgecolor': 'white',
-              'text.color': 'black',
-              'xtick.color': 'black',
-              'ytick.color': 'black',
-              'grid.color': 'grey',
-              'font.size' : 8,
-              'axes.labelsize': 8,
-              'xtick.labelsize': 8,
-              'ytick.labelsize': 8}
-        
-        plt.rcParams.update(rc)
-        
-        fig, axes = plt.subplots()
-        fig.suptitle('Leads criados por ano para ' + eng)
-        plt.xticks(rotation = 0)
-        sns.barplot(ax=axes, x=eng_ano.index, y= list(eng_ano), color = '#434141')
-        
-        for p in axes.patches:
-            axes.annotate(format(str(int(p.get_height()))), 
-            (p.get_x() + p.get_width() / 2., p.get_height()),
-            ha = 'center',
-            va = 'center', 
-            xytext = (0,10),
-            textcoords = 'offset points')
-        
-        st.pyplot(fig)
-        
-        st.text('')
-        
-        
-        ano = st.selectbox('Escolha o ano', [2019, 2020, 2021, 2022])
-        st.text(" ")
-        
-        col3, space2, col4 = st.columns((5.0,0.5,5.0))
-        
-        with col3:
+                lista = baseAjustada.loc[baseAjustada['Serviços PC'].notnull()]['Serviços PC'].unique()
             
-            prospec = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano) & (baseAjustada['Engenharia:'] == eng) ]['Prospecção'].value_counts()
+            elif eng == 'Ambiental':
+                lista = baseAjustada.loc[baseAjustada['Serviços PAmb'].notnull()]['Serviços PAmb'].unique()
             
-            rc = {'figure.figsize':(10,5),
-                  'axes.facecolor':'white',
-                  'axes.edgecolor': 'white',
-                  'axes.labelcolor': 'black',
-                  'figure.facecolor': 'white',
-                  'patch.edgecolor': 'white',
-                  'text.color': 'black',
-                  'xtick.color': 'black',
-                  'ytick.color': 'black',
-                  'grid.color': 'grey',
-                  'font.size' : 12,
-                  'axes.labelsize': 12,
-                  'xtick.labelsize': 12,
-                  'ytick.labelsize': 12}
+            elif eng == 'Elétrica':
+                lista = baseAjustada.loc[baseAjustada['Serviços PE'].notnull()]['Serviços PE'].unique()
             
-            plt.rcParams.update(rc)
+            elif eng == 'Mecânica':
+                lista = baseAjustada.loc[baseAjustada['Serviços PM'].notnull()]['Serviços PM'].unique()
             
-            fig, axes = plt.subplots()
-            fig.suptitle('Distribuição dos leads por forma de prospecção')
-            plt.xticks(rotation = 90)
-            sns.barplot(ax=axes, x=prospec.index, y= list(prospec), color = '#434141')
-            
-            for p in axes.patches:
-                axes.annotate(format(str(int(p.get_height()))), 
-                (p.get_x() + p.get_width() / 2., p.get_height()),
-                ha = 'center',
-                va = 'center', 
-                xytext = (0, 15),
-                textcoords = 'offset points')
-            
-            st.pyplot(fig)
+            elif eng == 'Produção':
+                lista = baseAjustada.loc[baseAjustada['Serviços PP'].notnull()]['Serviços PP'].unique()
             
             
+            servico = st.selectbox('Escolha a Serviço que deseja ver', lista)
         
-        with col4:
+        col14, col15 = st.columns((5.0,5.0))
+        
+        with col14:
             
-            forma = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano) & (baseAjustada['Engenharia:'] == eng) ]['Forma de Chegada'].value_counts()
+            if eng == 'Civil/Cartográfica':
+                
+                servicos = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano2)]['Serviços PC'].value_counts()
             
-            rc = {'figure.figsize':(10,5),
-                  'axes.facecolor':'white',
-                  'axes.edgecolor': 'white',
-                  'axes.labelcolor': 'black',
-                  'figure.facecolor': 'white',
-                  'patch.edgecolor': 'white',
-                  'text.color': 'black',
-                  'xtick.color': 'black',
-                  'ytick.color': 'black',
-                  'grid.color': 'grey',
-                  'font.size' : 12,
-                  'axes.labelsize': 12,
-                  'xtick.labelsize': 12,
-                  'ytick.labelsize': 12}
+            elif eng == 'Ambiental':
+                servicos = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano2)]['Serviços PAmb'].value_counts()
             
-            plt.rcParams.update(rc)
+            elif eng == 'Elétrica':
+                servicos = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano2)]['Serviços PE'].value_counts()
             
-            fig, axes = plt.subplots()
-            fig.suptitle('Distribuição dos leads por forma de chegada')
-            plt.xticks(rotation = 90)
-            sns.barplot(ax=axes, x=forma.index, y= list(forma), color = '#434141')
+            elif eng == 'Mecânica':
+                servicos = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano2)]['Serviços PM'].value_counts()
             
-            for p in axes.patches:
-                axes.annotate(format(str(int(p.get_height()))), 
-                (p.get_x() + p.get_width() / 2., p.get_height()),
-                ha = 'center',
-                va = 'center', 
-                xytext = (0, 15),
-                textcoords = 'offset points')
+            elif eng == 'Produção':
+                servicos = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano2)]['Serviços PP'].value_counts()
             
-            st.pyplot(fig)
-
-# ---------- INICIO DA PAGINA COORDENAÇÃO ---------------------------------
-
-elif pagina == "Coordenação":
-    
-    
-    
-    st.title("Desempenho das Coordenações")
-    st.subheader("Principais indicadores das coordenações")
-    
-    st.text(" ")
-    
-    eng = st.selectbox('Escolha a Coordenação que deseja ver', ['Civil/Cartográfica', 'Ambiental', 'Elétrica', 'Mecânica', 'Produção'])
-    
-    baseEng = baseAjustada.loc[(baseAjustada['Engenharia:'] == eng)]
-    
-    
-    
-    col1, space1, col2 = st.columns((5.0,0.5,5.0))
-    
-    with col1:
-        
-        fat_eng = baseEng.groupby(baseAssinado['Dia da assinatura do contrato'].dt.year)['Valor'].sum()
-        
-
-        st.title("Faturamento Anual")
-
-        x = np.arange(len(fat_eng.index))
-        width = 0.3
-        
-        rc = {'figure.figsize':(10,5),
-              'axes.facecolor':'white',
-              'axes.edgecolor': 'white',
-              'axes.labelcolor': 'black',
-              'figure.facecolor': 'white',
-              'patch.edgecolor': 'white',
-              'text.color': 'black',
-              'xtick.color': 'black',
-              'ytick.color': 'black',
-              'grid.color': 'grey',
-              'font.size' : 12,
-              'axes.labelsize': 12,
-              'xtick.labelsize': 12,
-              'ytick.labelsize': 12}
-        
-        plt.rcParams.update(rc)
-        
-        fig, axes = plt.subplots()
-        t = axes.bar(x, list(fat_eng), width, color = '#535152')
-        
-        axes.set_xticks(x, fat_eng.index)
-        plt.xticks(rotation = 0)
-        axes.get_yaxis().set_visible(False)
-        
-        axes.legend()
-        axes.bar_label(axes.containers[0], padding = 5, labels=([f'R${x:,.2f}' for x in t.datavalues]))
-        st.pyplot(fig)
-    
-    with col2:
-        
-        st.title("Funil de Projetos Anual")
-        
-        ano = st.selectbox('Escolha o ano', [2019, 2020, 2021, 2022])
-        
-        funil_eng = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano) & (baseAjustada['Engenharia:'] == eng)]['Current phase'].value_counts()
-        
-        rc = {'figure.figsize':(10,3),
+            rc = {'figure.figsize':(10,4),
                   'axes.facecolor':'white',
                   'axes.edgecolor': 'white',
                   'axes.labelcolor': 'black',
@@ -509,394 +875,312 @@ elif pagina == "Coordenação":
                   'xtick.labelsize': 10,
                   'ytick.labelsize': 10}
             
-        plt.rcParams.update(rc)
-        
-        fig, axes = plt.subplots()
-        plt.xticks(rotation = 90)
-        sns.barplot(ax=axes, x= funil_eng.index, y= list(funil_eng), color = '#434141')
-        
-        for p in axes.patches:
-            axes.annotate(format(str(int(p.get_height()))), 
-            (p.get_x() + p.get_width() / 2., p.get_height()),
-            ha = 'center',
-            va = 'center', 
-            xytext = (0, 10),
-            textcoords = 'offset points')
-        
-        st.pyplot(fig)
-        
-    
-    st.title('Chegada & Contratos por Serviço')
-    
-    col3, space2, col4 = st.columns((5.0,0.5,5.0))
-    
-    with col3:
-    
-        ano2 = st.selectbox('Escolha o ano de análise dos serviços', [2019, 2020, 2021, 2022])
-    
-    with col4:
-        
-        if eng == 'Civil/Cartográfica':
+            plt.rcParams.update(rc)
             
-            lista = baseAjustada.loc[baseAjustada['Serviços PC'].notnull()]['Serviços PC'].unique()
-        
-        elif eng == 'Ambiental':
-            lista = baseAjustada.loc[baseAjustada['Serviços PAmb'].notnull()]['Serviços PAmb'].unique()
-        
-        elif eng == 'Elétrica':
-            lista = baseAjustada.loc[baseAjustada['Serviços PE'].notnull()]['Serviços PE'].unique()
-        
-        elif eng == 'Mecânica':
-            lista = baseAjustada.loc[baseAjustada['Serviços PM'].notnull()]['Serviços PM'].unique()
-        
-        elif eng == 'Produção':
-            lista = baseAjustada.loc[baseAjustada['Serviços PP'].notnull()]['Serviços PP'].unique()
-        
-        
-        servico = st.selectbox('Escolha a Serviço que deseja ver', lista)
-    
-    col5, space3, col6 = st.columns((5.0,0.5,5.0))
-    
-    with col5:
-        
-        if eng == 'Civil/Cartográfica':
+            fig, axes = plt.subplots()
+            fig.suptitle('Serviços que mais chegaram em ' + str(ano2))
+            plt.xticks(rotation = 90)
+            sns.barplot(ax=axes, x= servicos.index, y= list(servicos), color = '#434141')
             
-            servicos = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano2)]['Serviços PC'].value_counts()
-        
-        elif eng == 'Ambiental':
-            servicos = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano2)]['Serviços PAmb'].value_counts()
-        
-        elif eng == 'Elétrica':
-            servicos = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano2)]['Serviços PE'].value_counts()
-        
-        elif eng == 'Mecânica':
-            servicos = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano2)]['Serviços PM'].value_counts()
-        
-        elif eng == 'Produção':
-            servicos = baseAjustada.loc[(baseAjustada['Created at'].dt.year == ano2)]['Serviços PP'].value_counts()
-        
-        rc = {'figure.figsize':(10,4),
-              'axes.facecolor':'white',
-              'axes.edgecolor': 'white',
-              'axes.labelcolor': 'black',
-              'figure.facecolor': 'white',
-              'patch.edgecolor': 'white',
-              'text.color': 'black',
-              'xtick.color': 'black',
-              'ytick.color': 'black',
-              'grid.color': 'grey',
-              'font.size' : 10,
-              'axes.labelsize': 10,
-              'xtick.labelsize': 10,
-              'ytick.labelsize': 10}
-        
-        plt.rcParams.update(rc)
-        
-        fig, axes = plt.subplots()
-        fig.suptitle('Serviços que mais chegaram em ' + str(ano2))
-        plt.xticks(rotation = 90)
-        sns.barplot(ax=axes, x= servicos.index, y= list(servicos), color = '#434141')
-        
-        for p in axes.patches:
-            axes.annotate(format(str(int(p.get_height()))), 
-            (p.get_x() + p.get_width() / 2., p.get_height()),
-            ha = 'center',
-            va = 'center', 
-            xytext = (0, 10),
-            textcoords = 'offset points')
-        
-        st.pyplot(fig)
-    
-    with col6:
-        
-        if eng == 'Civil/Cartográfica':
+            for p in axes.patches:
+                axes.annotate(format(str(int(p.get_height()))), 
+                (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha = 'center',
+                va = 'center', 
+                xytext = (0, 10),
+                textcoords = 'offset points')
             
-            servicos2 = baseAssinado.loc[(baseAssinado['Created at'].dt.year == ano2)]['Serviços PC'].value_counts()
+            st.pyplot(fig)
         
-        elif eng == 'Ambiental':
-            servicos2 = baseAssinado.loc[(baseAssinado['Created at'].dt.year == ano2)]['Serviços PAmb'].value_counts()
-        
-        elif eng == 'Elétrica':
-            servicos2 = baseAssinado.loc[(baseAssinado['Created at'].dt.year == ano2)]['Serviços PE'].value_counts()
-        
-        elif eng == 'Mecânica':
-            servicos2 = baseAssinado.loc[(baseAssinado['Created at'].dt.year == ano2)]['Serviços PM'].value_counts()
-        
-        elif eng == 'Produção':
-            servicos2 = baseAssinado.loc[(baseAssinado['Created at'].dt.year == ano2)]['Serviços PP'].value_counts()
-        
-        rc = {'figure.figsize':(10,4),
-              'axes.facecolor':'white',
-              'axes.edgecolor': 'white',
-              'axes.labelcolor': 'black',
-              'figure.facecolor': 'white',
-              'patch.edgecolor': 'white',
-              'text.color': 'black',
-              'xtick.color': 'black',
-              'ytick.color': 'black',
-              'grid.color': 'grey',
-              'font.size' : 10,
-              'axes.labelsize': 10,
-              'xtick.labelsize': 10,
-              'ytick.labelsize': 10}
-        
-        plt.rcParams.update(rc)
-        
-        fig, axes = plt.subplots()
-        fig.suptitle('Serviços que mais fecharam contrato em ' + str(ano2))
-        plt.xticks(rotation = 90)
-        try:
-            sns.barplot(ax=axes, x= servicos2.index, y= list(servicos2), color = '#434141')
-        except:
-            st.text('')
-        
-        for p in axes.patches:
-            axes.annotate(format(str(int(p.get_height()))), 
-            (p.get_x() + p.get_width() / 2., p.get_height()),
-            ha = 'center',
-            va = 'center', 
-            xytext = (0, 10),
-            textcoords = 'offset points')
-        
-        st.pyplot(fig)
-    
-    st.markdown("------------------------------------------------------------------------------------")
-    st.title('Análise sobre ' + servico + ' em ' + str(ano2))
-     
-    st.text(' ')
-    st.text(' ')
-    st.text(' ')
-    
-    col7, space4, col8 = st.columns((5.0,0.5,5.0))
-    
-    with col7:
-        
-        if eng == 'Civil/Cartográfica':
+        with col15:
             
-            formaChegadaServico = baseAjustada.loc[(baseAjustada['Serviços PC'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
-        
-        elif eng == 'Ambiental':
+            if eng == 'Civil/Cartográfica':
+                
+                servicos2 = baseAssinado.loc[(baseAssinado['Created at'].dt.year == ano2)]['Serviços PC'].value_counts()
             
-            formaChegadaServico = baseAjustada.loc[(baseAjustada['Serviços PAmb'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
-        
-        elif eng == 'Elétrica':
+            elif eng == 'Ambiental':
+                servicos2 = baseAssinado.loc[(baseAssinado['Created at'].dt.year == ano2)]['Serviços PAmb'].value_counts()
             
-            formaChegadaServico = baseAjustada.loc[(baseAjustada['Serviços PE'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
-        
-        elif eng == 'Mecânica':
+            elif eng == 'Elétrica':
+                servicos2 = baseAssinado.loc[(baseAssinado['Created at'].dt.year == ano2)]['Serviços PE'].value_counts()
             
-            formaChegadaServico = baseAjustada.loc[(baseAjustada['Serviços PM'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
-        
-        elif eng == 'Produção':
+            elif eng == 'Mecânica':
+                servicos2 = baseAssinado.loc[(baseAssinado['Created at'].dt.year == ano2)]['Serviços PM'].value_counts()
             
-            formaChegadaServico = baseAjustada.loc[(baseAjustada['Serviços PP'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
-        
-        rc = {'figure.figsize':(10,4),
-              'axes.facecolor':'white',
-              'axes.edgecolor': 'white',
-              'axes.labelcolor': 'black',
-              'figure.facecolor': 'white',
-              'patch.edgecolor': 'white',
-              'text.color': 'black',
-              'xtick.color': 'black',
-              'ytick.color': 'black',
-              'grid.color': 'grey',
-              'font.size' : 10,
-              'axes.labelsize': 10,
-              'xtick.labelsize': 10,
-              'ytick.labelsize': 10}
-        
-        plt.rcParams.update(rc)
-        
-        fig, axes = plt.subplots()
-        fig.suptitle('Forma de Chegada de ' + servico)
-        plt.xticks(rotation = 90)
-        try:
-            sns.barplot(ax=axes, x= formaChegadaServico.index, y= list(formaChegadaServico), color = '#434141')
-        except:
-            st.text('')
-        
-        for p in axes.patches:
-            axes.annotate(format(str(int(p.get_height()))), 
-            (p.get_x() + p.get_width() / 2., p.get_height()),
-            ha = 'center',
-            va = 'center', 
-            xytext = (0, 10),
-            textcoords = 'offset points')
-        
-        st.pyplot(fig)
-    
-    with col8:
-        
-        if eng == 'Civil/Cartográfica':
+            elif eng == 'Produção':
+                servicos2 = baseAssinado.loc[(baseAssinado['Created at'].dt.year == ano2)]['Serviços PP'].value_counts()
             
-            formaChegadaServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PC'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
-        
-        elif eng == 'Ambiental':
-            formaChegadaServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PAmb'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
-        
-        elif eng == 'Elétrica':
-            formaChegadaServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PE'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
-        
-        elif eng == 'Mecânica':
-            formaChegadaServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PM'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
+            rc = {'figure.figsize':(10,4),
+                  'axes.facecolor':'white',
+                  'axes.edgecolor': 'white',
+                  'axes.labelcolor': 'black',
+                  'figure.facecolor': 'white',
+                  'patch.edgecolor': 'white',
+                  'text.color': 'black',
+                  'xtick.color': 'black',
+                  'ytick.color': 'black',
+                  'grid.color': 'grey',
+                  'font.size' : 10,
+                  'axes.labelsize': 10,
+                  'xtick.labelsize': 10,
+                  'ytick.labelsize': 10}
             
-        elif eng == 'Produção':
-            formaChegadaServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PP'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
-        
-        rc = {'figure.figsize':(10,4),
-              'axes.facecolor':'white',
-              'axes.edgecolor': 'white',
-              'axes.labelcolor': 'black',
-              'figure.facecolor': 'white',
-              'patch.edgecolor': 'white',
-              'text.color': 'black',
-              'xtick.color': 'black',
-              'ytick.color': 'black',
-              'grid.color': 'grey',
-              'font.size' : 10,
-              'axes.labelsize': 10,
-              'xtick.labelsize': 10,
-              'ytick.labelsize': 10}
-        
-        plt.rcParams.update(rc)
-        
-        fig, axes = plt.subplots()
-        fig.suptitle('Forma de Chegada dos Contratos de ' + servico)
-        plt.xticks(rotation = 90)
-        try:
-            sns.barplot(ax=axes, x= formaChegadaServicoFechado.index, y= list(formaChegadaServicoFechado), color = '#434141')
-        except:
-            st.text('')
-        
-        for p in axes.patches:
-            axes.annotate(format(str(int(p.get_height()))), 
-            (p.get_x() + p.get_width() / 2., p.get_height()),
-            ha = 'center',
-            va = 'center', 
-            xytext = (0, 10),
-            textcoords = 'offset points')
-        
-        st.pyplot(fig)
-        
-    
-    st.text(' ')
-    st.text(' ')
-    st.text(' ')
-    
-    col9, space5, col10 = st.columns((5.0,0.5,5.0))
-    
-    with col9:
-        
-        if eng == 'Civil/Cartográfica':
+            plt.rcParams.update(rc)
             
-            prospecServico = baseAjustada.loc[(baseAjustada['Serviços PC'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
-        
-        elif eng == 'Ambiental':
+            fig, axes = plt.subplots()
+            fig.suptitle('Serviços que mais fecharam contrato em ' + str(ano2))
+            plt.xticks(rotation = 90)
+            try:
+                sns.barplot(ax=axes, x= servicos2.index, y= list(servicos2), color = '#434141')
+            except:
+                st.text('')
             
-            prospecServico = baseAjustada.loc[(baseAjustada['Serviços PAmb'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
-        
-        elif eng == 'Elétrica':
+            for p in axes.patches:
+                axes.annotate(format(str(int(p.get_height()))), 
+                (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha = 'center',
+                va = 'center', 
+                xytext = (0, 10),
+                textcoords = 'offset points')
             
-            prospecServico = baseAjustada.loc[(baseAjustada['Serviços PE'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            st.pyplot(fig)
         
-        elif eng == 'Mecânica':
+        st.markdown("------------------------------------------------------------------------------------")
+        st.title('Análise sobre ' + servico + ' em ' + str(ano2))
+         
+        st.text(' ')
+        st.text(' ')
+        st.text(' ')
+        
+        col16, col17 = st.columns((5.0,5.0))
+        
+        with col16:
             
-            prospecServico = baseAjustada.loc[(baseAjustada['Serviços PM'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
-        
-        elif eng == 'Produção':
+            if eng == 'Civil/Cartográfica':
+                
+                formaChegadaServico = baseAjustada.loc[(baseAjustada['Serviços PC'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
             
-            prospecServico = baseAjustada.loc[(baseAjustada['Serviços PP'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
-        
-        rc = {'figure.figsize':(10,4),
-              'axes.facecolor':'white',
-              'axes.edgecolor': 'white',
-              'axes.labelcolor': 'black',
-              'figure.facecolor': 'white',
-              'patch.edgecolor': 'white',
-              'text.color': 'black',
-              'xtick.color': 'black',
-              'ytick.color': 'black',
-              'grid.color': 'grey',
-              'font.size' : 10,
-              'axes.labelsize': 10,
-              'xtick.labelsize': 10,
-              'ytick.labelsize': 10}
-        
-        plt.rcParams.update(rc)
-        
-        fig, axes = plt.subplots()
-        fig.suptitle('Forma de Prospecção de ' + servico)
-        plt.xticks(rotation = 90)
-        try:
-            sns.barplot(ax=axes, x= prospecServico.index, y= list(prospecServico), color = '#434141')
-        except:
-            st.text('')
-        
-        for p in axes.patches:
-            axes.annotate(format(str(int(p.get_height()))), 
-            (p.get_x() + p.get_width() / 2., p.get_height()),
-            ha = 'center',
-            va = 'center', 
-            xytext = (0, 10),
-            textcoords = 'offset points')
-        
-        st.pyplot(fig)
-    
-    with col10:
-        
-        if eng == 'Civil/Cartográfica':
+            elif eng == 'Ambiental':
+                
+                formaChegadaServico = baseAjustada.loc[(baseAjustada['Serviços PAmb'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
             
-            prospecServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PC'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
-        
-        elif eng == 'Ambiental':
-            prospecServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PAmb'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
-        
-        elif eng == 'Elétrica':
-            prospecServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PE'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
-        
-        elif eng == 'Mecânica':
-            prospecServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PM'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            elif eng == 'Elétrica':
+                
+                formaChegadaServico = baseAjustada.loc[(baseAjustada['Serviços PE'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
             
-        elif eng == 'Produção':
-            prospecServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PP'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            elif eng == 'Mecânica':
+                
+                formaChegadaServico = baseAjustada.loc[(baseAjustada['Serviços PM'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
+            
+            elif eng == 'Produção':
+                
+                formaChegadaServico = baseAjustada.loc[(baseAjustada['Serviços PP'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
+            
+            rc = {'figure.figsize':(10,4),
+                  'axes.facecolor':'white',
+                  'axes.edgecolor': 'white',
+                  'axes.labelcolor': 'black',
+                  'figure.facecolor': 'white',
+                  'patch.edgecolor': 'white',
+                  'text.color': 'black',
+                  'xtick.color': 'black',
+                  'ytick.color': 'black',
+                  'grid.color': 'grey',
+                  'font.size' : 10,
+                  'axes.labelsize': 10,
+                  'xtick.labelsize': 10,
+                  'ytick.labelsize': 10}
+            
+            plt.rcParams.update(rc)
+            
+            fig, axes = plt.subplots()
+            fig.suptitle('Forma de Chegada de ' + servico)
+            plt.xticks(rotation = 90)
+            try:
+                sns.barplot(ax=axes, x= formaChegadaServico.index, y= list(formaChegadaServico), color = '#434141')
+            except:
+                st.text('')
+            
+            for p in axes.patches:
+                axes.annotate(format(str(int(p.get_height()))), 
+                (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha = 'center',
+                va = 'center', 
+                xytext = (0, 10),
+                textcoords = 'offset points')
+            
+            st.pyplot(fig)
         
-        rc = {'figure.figsize':(10,4),
-              'axes.facecolor':'white',
-              'axes.edgecolor': 'white',
-              'axes.labelcolor': 'black',
-              'figure.facecolor': 'white',
-              'patch.edgecolor': 'white',
-              'text.color': 'black',
-              'xtick.color': 'black',
-              'ytick.color': 'black',
-              'grid.color': 'grey',
-              'font.size' : 10,
-              'axes.labelsize': 10,
-              'xtick.labelsize': 10,
-              'ytick.labelsize': 10}
+        with col17:
+            
+            if eng == 'Civil/Cartográfica':
+                
+                formaChegadaServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PC'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
+            
+            elif eng == 'Ambiental':
+                formaChegadaServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PAmb'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
+            
+            elif eng == 'Elétrica':
+                formaChegadaServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PE'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
+            
+            elif eng == 'Mecânica':
+                formaChegadaServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PM'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
+                
+            elif eng == 'Produção':
+                formaChegadaServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PP'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Forma de Chegada'].value_counts()
+            
+            rc = {'figure.figsize':(10,4),
+                  'axes.facecolor':'white',
+                  'axes.edgecolor': 'white',
+                  'axes.labelcolor': 'black',
+                  'figure.facecolor': 'white',
+                  'patch.edgecolor': 'white',
+                  'text.color': 'black',
+                  'xtick.color': 'black',
+                  'ytick.color': 'black',
+                  'grid.color': 'grey',
+                  'font.size' : 10,
+                  'axes.labelsize': 10,
+                  'xtick.labelsize': 10,
+                  'ytick.labelsize': 10}
+            
+            plt.rcParams.update(rc)
+            
+            fig, axes = plt.subplots()
+            fig.suptitle('Forma de Chegada dos Contratos de ' + servico)
+            plt.xticks(rotation = 90)
+            try:
+                sns.barplot(ax=axes, x= formaChegadaServicoFechado.index, y= list(formaChegadaServicoFechado), color = '#434141')
+            except:
+                st.text('')
+            
+            for p in axes.patches:
+                axes.annotate(format(str(int(p.get_height()))), 
+                (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha = 'center',
+                va = 'center', 
+                xytext = (0, 10),
+                textcoords = 'offset points')
+            
+            st.pyplot(fig)
+            
         
-        plt.rcParams.update(rc)
+        st.text(' ')
+        st.text(' ')
+        st.text(' ')
         
-        fig, axes = plt.subplots()
-        fig.suptitle('Forma de Prospecção dos Contratos de ' + servico)
-        plt.xticks(rotation = 90)
-        try:
-            sns.barplot(ax=axes, x= prospecServicoFechado.index, y= list(prospecServicoFechado), color = '#434141')
-        except:
-            st.text('')
+        col9, space5, col10 = st.columns((5.0,0.5,5.0))
         
-        for p in axes.patches:
-            axes.annotate(format(str(int(p.get_height()))), 
-            (p.get_x() + p.get_width() / 2., p.get_height()),
-            ha = 'center',
-            va = 'center', 
-            xytext = (0, 10),
-            textcoords = 'offset points')
+        with col9:
+            
+            if eng == 'Civil/Cartográfica':
+                
+                prospecServico = baseAjustada.loc[(baseAjustada['Serviços PC'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            
+            elif eng == 'Ambiental':
+                
+                prospecServico = baseAjustada.loc[(baseAjustada['Serviços PAmb'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            
+            elif eng == 'Elétrica':
+                
+                prospecServico = baseAjustada.loc[(baseAjustada['Serviços PE'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            
+            elif eng == 'Mecânica':
+                
+                prospecServico = baseAjustada.loc[(baseAjustada['Serviços PM'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            
+            elif eng == 'Produção':
+                
+                prospecServico = baseAjustada.loc[(baseAjustada['Serviços PP'] == servico) & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            
+            rc = {'figure.figsize':(10,4),
+                  'axes.facecolor':'white',
+                  'axes.edgecolor': 'white',
+                  'axes.labelcolor': 'black',
+                  'figure.facecolor': 'white',
+                  'patch.edgecolor': 'white',
+                  'text.color': 'black',
+                  'xtick.color': 'black',
+                  'ytick.color': 'black',
+                  'grid.color': 'grey',
+                  'font.size' : 10,
+                  'axes.labelsize': 10,
+                  'xtick.labelsize': 10,
+                  'ytick.labelsize': 10}
+            
+            plt.rcParams.update(rc)
+            
+            fig, axes = plt.subplots()
+            fig.suptitle('Forma de Prospecção de ' + servico)
+            plt.xticks(rotation = 90)
+            try:
+                sns.barplot(ax=axes, x= prospecServico.index, y= list(prospecServico), color = '#434141')
+            except:
+                st.text('')
+            
+            for p in axes.patches:
+                axes.annotate(format(str(int(p.get_height()))), 
+                (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha = 'center',
+                va = 'center', 
+                xytext = (0, 10),
+                textcoords = 'offset points')
+            
+            st.pyplot(fig)
         
-        st.pyplot(fig)
-        
-    
+        with col10:
+            
+            if eng == 'Civil/Cartográfica':
+                
+                prospecServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PC'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            
+            elif eng == 'Ambiental':
+                prospecServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PAmb'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            
+            elif eng == 'Elétrica':
+                prospecServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PE'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            
+            elif eng == 'Mecânica':
+                prospecServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PM'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+                
+            elif eng == 'Produção':
+                prospecServicoFechado = baseAjustada.loc[(baseAjustada['Serviços PP'] == servico) & (baseAjustada['Current phase'] == 'ASSINADO') & (baseAjustada['Created at'].dt.year == ano2)]['Prospecção'].value_counts()
+            
+            rc = {'figure.figsize':(10,4),
+                  'axes.facecolor':'white',
+                  'axes.edgecolor': 'white',
+                  'axes.labelcolor': 'black',
+                  'figure.facecolor': 'white',
+                  'patch.edgecolor': 'white',
+                  'text.color': 'black',
+                  'xtick.color': 'black',
+                  'ytick.color': 'black',
+                  'grid.color': 'grey',
+                  'font.size' : 10,
+                  'axes.labelsize': 10,
+                  'xtick.labelsize': 10,
+                  'ytick.labelsize': 10}
+            
+            plt.rcParams.update(rc)
+            
+            fig, axes = plt.subplots()
+            fig.suptitle('Forma de Prospecção dos Contratos de ' + servico)
+            plt.xticks(rotation = 90)
+            try:
+                sns.barplot(ax=axes, x= prospecServicoFechado.index, y= list(prospecServicoFechado), color = '#434141')
+            except:
+                st.text('')
+            
+            for p in axes.patches:
+                axes.annotate(format(str(int(p.get_height()))), 
+                (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha = 'center',
+                va = 'center', 
+                xytext = (0, 10),
+                textcoords = 'offset points')
+            
+            st.pyplot(fig)
+            
 
 
         
